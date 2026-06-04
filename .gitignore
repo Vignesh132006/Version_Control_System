@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.gemini/
+.system_generated/
+*.log
+push_one_by_one.py
+
