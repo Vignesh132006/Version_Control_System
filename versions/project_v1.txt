@@ -1,2 +1,2 @@
-This is version 1.
-apple.
+This is version 1, 
+i build a mini git.

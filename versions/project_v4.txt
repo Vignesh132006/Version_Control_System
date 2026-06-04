@@ -1,4 +1,0 @@
-This is version 4.
-animal,
-fruits,
-mobile.
