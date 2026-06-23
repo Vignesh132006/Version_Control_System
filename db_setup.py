@@ -14,19 +14,45 @@ DB_CONFIG = {
     'port': int(os.environ.get('DB_PORT', 3306))
 }
 
+def setup_sqlite_database():
+    import sqlite3
+    try:
+        db = sqlite3.connect("version_system.db")
+        cursor = db.cursor()
+        create_table_query = f"""
+        CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            version_no INT NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            created_at DATETIME NOT NULL
+        );
+        """
+        cursor.execute(create_table_query)
+        db.commit()
+        print("[OK] SQLite Database version_system.db checked/created.")
+        return True
+    except Exception as e:
+        print(f"[ERROR] SQLite setup failed: {e}")
+        return False
+    finally:
+        if 'db' in locals():
+            db.close()
+
 def setup_database():
+    db_host = os.environ.get("DB_HOST", "")
+    if not db_host:
+        print("[INFO] No DB_HOST environment variable configured. Falling back to SQLite setup...")
+        return setup_sqlite_database()
+
     print("Connecting to MySQL server...")
     try:
         # Connect to MySQL server without database first
         db = mysql.connector.connect(**DB_CONFIG)
         cursor = db.cursor()
     except mysql.connector.Error as err:
-        print(f"[ERROR] Error connecting to MySQL: {err}")
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Please check your username and password.")
-        elif err.errno == 2003: # Can't connect to MySQL server
-            print("Please ensure your MySQL service is running.")
-        return False
+        print(f"[WARNING] Error connecting to MySQL: {err}")
+        print("Falling back to SQLite database setup...")
+        return setup_sqlite_database()
 
     try:
         # Create database if it does not exist
@@ -55,8 +81,10 @@ def setup_database():
         print(f"[ERROR] Database setup error: {err}")
         return False
     finally:
-        cursor.close()
-        db.close()
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'db' in locals() and db:
+            db.close()
         print("Connection closed.")
 
 if __name__ == "__main__":

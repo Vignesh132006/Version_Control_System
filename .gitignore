@@ -4,4 +4,5 @@ __pycache__/
 .system_generated/
 *.log
 push_one_by_one.py
-
+*.db
+versions/project_v*.txt

@@ -15,13 +15,60 @@ class VersionManager:
         }
         self.base_file = base_file
         self.versions_dir = versions_dir
+        self.is_sqlite = False
 
     def _get_connection(self):
-        """Establish and return a connection to the MySQL database."""
+        """Establish and return a connection to the database (MySQL with SQLite fallback)."""
+        db_host = os.environ.get("DB_HOST", "")
+        if not db_host:
+            self.is_sqlite = True
+        
+        if self.is_sqlite:
+            import sqlite3
+            conn = sqlite3.connect("version_system.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS version_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version_no INT NOT NULL,
+                file_name VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL
+            );
+            """)
+            conn.commit()
+            cursor.close()
+            return conn
+
         try:
-            return mysql.connector.connect(**self.db_config)
-        except Error as err:
-            raise RuntimeError(f"Database connection failed: {err}")
+            conn = mysql.connector.connect(**self.db_config)
+            self.is_sqlite = False
+            return conn
+        except Exception as err:
+            print(f"[WARNING] MySQL connection failed ({err}). Falling back to SQLite...")
+            self.is_sqlite = True
+            import sqlite3
+            conn = sqlite3.connect("version_system.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS version_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version_no INT NOT NULL,
+                file_name VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL
+            );
+            """)
+            conn.commit()
+            cursor.close()
+            return conn
+
+    def _execute(self, cursor, query, params=None):
+        """Helper to execute queries with correct database placeholders."""
+        if self.is_sqlite:
+            query = query.replace("%s", "?")
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
 
     def create_version(self):
         """
@@ -76,13 +123,13 @@ class VersionManager:
             # 3. Save metadata into MySQL database
             created_at = datetime.datetime.now()
             query = "INSERT INTO version_history (version_no, file_name, created_at) VALUES (%s, %s, %s)"
-            cursor.execute(query, (version_no, db_file_path, created_at))
+            self._execute(cursor, query, (version_no, db_file_path, created_at))
             db.commit()
 
             return version_no, db_file_path, created_at
 
-        except Error as err:
-            raise RuntimeError(f"MySQL Error during version creation: {err}")
+        except Exception as err:
+            raise RuntimeError(f"Database Error during version creation: {err}")
         finally:
             if cursor:
                 cursor.close()
@@ -91,7 +138,7 @@ class VersionManager:
 
     def list_versions(self):
         """
-        Retrieves all version records from the MySQL database.
+        Retrieves all version records from the database.
         Returns a list of tuples: (version_no, file_name, created_at).
         """
         db = None
@@ -100,9 +147,21 @@ class VersionManager:
             db = self._get_connection()
             cursor = db.cursor()
             cursor.execute("SELECT version_no, file_name, created_at FROM version_history ORDER BY version_no ASC")
-            return cursor.fetchall()
-        except Error as err:
-            raise RuntimeError(f"MySQL Error during retrieval: {err}")
+            records = cursor.fetchall()
+            if self.is_sqlite:
+                parsed_records = []
+                for r in records:
+                    dt = r[2]
+                    if isinstance(dt, str):
+                        try:
+                            dt = datetime.datetime.strptime(dt.split(".")[0], "%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            pass
+                    parsed_records.append((r[0], r[1], dt))
+                return parsed_records
+            return records
+        except Exception as err:
+            raise RuntimeError(f"Database Error during retrieval: {err}")
         finally:
             if cursor:
                 cursor.close()
@@ -179,7 +238,7 @@ class VersionManager:
 
             # 1. Delete from database
             query = "DELETE FROM version_history WHERE version_no = %s"
-            cursor.execute(query, (version_no,))
+            self._execute(cursor, query, (version_no,))
             deleted_rows = cursor.rowcount
             db.commit()
 
@@ -196,8 +255,8 @@ class VersionManager:
 
             return deleted_rows > 0, file_deleted
 
-        except Error as err:
-            raise RuntimeError(f"MySQL Error during version deletion: {err}")
+        except Exception as err:
+            raise RuntimeError(f"Database Error during version deletion: {err}")
         finally:
             if cursor:
                 cursor.close()
