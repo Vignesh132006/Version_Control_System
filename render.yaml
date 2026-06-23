@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: version-control-system
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python db_setup.py && gunicorn wsgi:app
+    envVars:
+      - key: DB_HOST
+        value: ""
+      - key: DB_USER
+        value: "root"
+      - key: DB_PASSWORD
+        value: ""
+      - key: DB_NAME
+        value: "version_system"
+      - key: DB_PORT
+        value: "3306"

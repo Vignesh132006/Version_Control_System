@@ -7,10 +7,11 @@ from mysql.connector import Error
 class VersionManager:
     def __init__(self, host="localhost", user="root", password="Pinky@143", database="version_system", base_file="project_base.txt", versions_dir="versions"):
         self.db_config = {
-            'host': host,
-            'user': user,
-            'password': password,
-            'database': database
+            'host': os.environ.get("DB_HOST", host),
+            'user': os.environ.get("DB_USER", user),
+            'password': os.environ.get("DB_PASSWORD", password),
+            'database': os.environ.get("DB_NAME", database),
+            'port': int(os.environ.get("DB_PORT", 3306))
         }
         self.base_file = base_file
         self.versions_dir = versions_dir

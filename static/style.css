@@ -31,13 +31,13 @@
     --btn-outline-border: #8b949e;
     --btn-outline-hover:  #30363d;
 
-    --btn-danger-bg:    #da3633;
-    --btn-danger-hover: #b62324;
+    --btn-danger-bg:    #21262d;
+    --btn-danger-hover: #30363d;
 
-    --diff-add-bg:    #1a2e1a;
-    --diff-add-fg:    #7ee787;
-    --diff-del-bg:    #3d1a1a;
-    --diff-del-fg:    #ff7b72;
+    --diff-add-bg:    #1f242c;
+    --diff-add-fg:    #f0f6fc;
+    --diff-del-bg:    #161b22;
+    --diff-del-fg:    #8b949e;
 
     /* Contribution graph levels (monochrome) */
     --contrib-0: #161b22;
@@ -179,13 +179,14 @@ a {
 }
 
 .nav-status-dot.online {
-    background: #7ee787;
-    box-shadow: 0 0 6px rgba(126, 231, 135, 0.4);
+    background: var(--fg-default);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
 }
 
 .nav-status-dot.offline {
-    background: #ff7b72;
-    box-shadow: 0 0 6px rgba(255, 123, 114, 0.4);
+    background: transparent;
+    border: 1.5px solid var(--fg-subtle);
+    box-shadow: none;
 }
 
 /* ─── Repo Header / Tab Bar ──────────────────────── */
@@ -830,11 +831,14 @@ a {
 .diff-line.addition {
     background: var(--diff-add-bg);
     color: var(--diff-add-fg);
+    border-left: 3px solid var(--accent);
 }
 
 .diff-line.deletion {
     background: var(--diff-del-bg);
     color: var(--diff-del-fg);
+    text-decoration: line-through;
+    border-left: 3px solid var(--border-default);
 }
 
 .diff-line.unchanged {
@@ -970,15 +974,15 @@ a {
 }
 
 .toast.success {
-    border-left: 3px solid #e6edf3;
+    border-left: 3px solid var(--fg-default);
 }
 
 .toast.error {
-    border-left: 3px solid #ff7b72;
+    border-left: 3px solid var(--fg-subtle);
 }
 
 .toast.info {
-    border-left: 3px solid #8b949e;
+    border-left: 3px solid var(--accent-muted);
 }
 
 @keyframes toastIn {

@@ -1,14 +1,17 @@
 import mysql.connector
 from mysql.connector import errorcode
 
-DB_NAME = 'version_system'
-TABLE_NAME = 'version_history'
+import os
+
+DB_NAME = os.environ.get('DB_NAME', 'version_system')
+TABLE_NAME = os.environ.get('DB_TABLE_NAME', 'version_history')
 
 # Connection details
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'Pinky@143'
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', 'Pinky@143'),
+    'port': int(os.environ.get('DB_PORT', 3306))
 }
 
 def setup_database():
